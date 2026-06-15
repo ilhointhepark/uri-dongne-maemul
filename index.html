@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<!-- 부동산 매물 대시보드: 3탭(지도/저평가/모니터링), 지도 메인 -->
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>우리동네 매물판</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>🏠 우리동네 매물판</h1>
+    <span id="updated" class="updated"></span>
+    <nav class="tabs">
+      <button class="tab active" data-tab="map">🗺️ 지도</button>
+      <button class="tab" data-tab="deal">🔥 저평가</button>
+      <button class="tab" data-tab="monitor">📊 모니터링</button>
+    </nav>
+    <div class="filters">
+      <input id="f-max" type="number" placeholder="예산 상한(만원)">
+      <input id="f-dong" type="text" placeholder="동 필터">
+      <select id="f-sort">
+        <option value="new">신규순</option>
+        <option value="discount">저평가순</option>
+        <option value="price">가격낮은순</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <section id="tab-map" class="panel active">
+      <div id="map"></div>
+      <aside id="map-list" class="side-list"></aside>
+    </section>
+    <section id="tab-deal" class="panel"><div id="deal-grid" class="grid"></div></section>
+    <section id="tab-monitor" class="panel">
+      <div id="kpis" class="kpis"></div>
+      <div id="feed" class="feed"></div>
+    </section>
+  </main>
+
+  <script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=KAKAO_JS_KEY&autoload=false" id="kakao-sdk"></script>
+  <script src="app.js"></script>
+</body>
+</html>

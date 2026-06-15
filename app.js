@@ -1,0 +1,109 @@
+// 대시보드 클라이언트: listings.json 로드 → 3탭 렌더 + 카카오맵 핀
+let LISTINGS = [];
+let MAP = null, MARKERS = [];
+
+async function boot() {
+  const cfg = await fetch("web_config.json").then(r => r.json()).catch(() => ({}));
+  loadKakaoSdk(cfg.kakao_js_key);
+  const data = await fetch("data/listings.json").then(r => r.json()).catch(() => ({listings: []}));
+  LISTINGS = (data.listings || []).filter(l => l.matched);
+  document.getElementById("updated").textContent = data.updated ? `갱신 ${data.updated}` : "";
+  setupTabs();
+  setupFilters();
+  render();
+}
+
+function loadKakaoSdk(jsKey) {
+  const el = document.getElementById("kakao-sdk");
+  el.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${jsKey}&autoload=false`;
+  el.onload = () => kakao.maps.load(initMap);
+}
+
+function initMap() {
+  const center = LISTINGS.find(l => l.lat && l.lng) || {lat: 37.5665, lng: 126.978};
+  MAP = new kakao.maps.Map(document.getElementById("map"), {
+    center: new kakao.maps.LatLng(center.lat, center.lng), level: 5,
+  });
+  drawMarkers(currentRows());
+}
+
+function drawMarkers(rows) {
+  if (!MAP) return;
+  MARKERS.forEach(m => m.setMap(null)); MARKERS = [];
+  rows.filter(r => r.lat && r.lng).forEach(r => {
+    const mk = new kakao.maps.Marker({
+      position: new kakao.maps.LatLng(r.lat, r.lng), map: MAP,
+    });
+    const iw = new kakao.maps.InfoWindow({
+      content: `<div style="padding:6px;font-size:12px">${r.complex} ${fmtPrice(r.price)}</div>`,
+    });
+    kakao.maps.event.addListener(mk, "click", () => iw.open(MAP, mk));
+    MARKERS.push(mk);
+  });
+}
+
+function setupTabs() {
+  document.querySelectorAll(".tab").forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll(".tab").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+      if (btn.dataset.tab === "map" && MAP) setTimeout(() => MAP.relayout(), 0);
+    };
+  });
+}
+
+function setupFilters() {
+  ["f-max", "f-dong", "f-sort"].forEach(id =>
+    document.getElementById(id).addEventListener("input", render));
+}
+
+function currentRows() {
+  const max = parseInt(document.getElementById("f-max").value, 10);
+  const dong = document.getElementById("f-dong").value.trim();
+  const sort = document.getElementById("f-sort").value;
+  let rows = LISTINGS.slice();
+  if (!isNaN(max)) rows = rows.filter(r => r.price <= max);
+  if (dong) rows = rows.filter(r => (r.dong || "").includes(dong));
+  rows.sort((a, b) => {
+    if (sort === "discount") return (b.discount_pct ?? -1e9) - (a.discount_pct ?? -1e9);
+    if (sort === "price") return a.price - b.price;
+    return (b.first_seen || "").localeCompare(a.first_seen || "");
+  });
+  return rows;
+}
+
+function fmtPrice(p) { return p.toLocaleString() + "만"; }
+function discBadge(r) {
+  if (r.discount_pct == null) return "";
+  const cls = r.discount_pct >= 0 ? "down" : "up";
+  const sign = r.discount_pct >= 0 ? "▼" : "▲";
+  return ` <span class="${cls}">${sign}${Math.abs(r.discount_pct)}%</span>`;
+}
+function rowHtml(r) {
+  const isNew = r.is_new ? `<span class="badge-new">NEW</span> ` : "";
+  return `<div class="row" data-lat="${r.lat}" data-lng="${r.lng}">
+    ${isNew}<b>${r.complex}</b> ${r.area_py}평 ${r.floor}<br>
+    ${fmtPrice(r.price)}${discBadge(r)}
+    <a href="${r.url}" target="_blank" style="float:right">보기</a></div>`;
+}
+
+function render() {
+  const rows = currentRows();
+  document.getElementById("map-list").innerHTML = rows.map(rowHtml).join("") || "<p>매칭 매물 없음</p>";
+  document.getElementById("deal-grid").innerHTML =
+    rows.slice().sort((a,b)=>(b.discount_pct??-1e9)-(a.discount_pct??-1e9))
+        .map(r => `<div class="card">${rowHtml(r)}</div>`).join("");
+  const newCnt = rows.filter(r => r.is_new).length;
+  const lowCnt = rows.filter(r => (r.discount_pct ?? 0) > 0).length;
+  document.getElementById("kpis").innerHTML =
+    `<div class="kpi"><b>${rows.length}</b>매칭</div>
+     <div class="kpi"><b>${newCnt}</b>신규</div>
+     <div class="kpi"><b>${lowCnt}</b>실거래가↓</div>`;
+  document.getElementById("feed").innerHTML =
+    rows.filter(r => r.is_new).map(rowHtml).join("") || "<p>오늘 신규 없음</p>";
+  drawMarkers(rows);
+}
+
+document.addEventListener("DOMContentLoaded", boot);

@@ -1,0 +1,26 @@
+/* 대시보드 레이아웃 스타일: 지도 메인(화면 70%), 카드/피드 */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, sans-serif; color: #222; }
+header { padding: 10px 16px; border-bottom: 1px solid #eee; }
+h1 { font-size: 18px; margin: 0 0 6px; display: inline-block; }
+.updated { color: #888; font-size: 12px; margin-left: 8px; }
+.tabs { margin: 8px 0; }
+.tab { border: 0; background: #f1f1f1; padding: 8px 14px; border-radius: 6px; margin-right: 6px; cursor: pointer; }
+.tab.active { background: #1a9e5c; color: #fff; }
+.filters input, .filters select { padding: 6px 8px; margin-right: 6px; border: 1px solid #ddd; border-radius: 6px; }
+.panel { display: none; }
+.panel.active { display: block; }
+#tab-map.active { display: flex; gap: 8px; height: 70vh; padding: 8px 16px; }
+#map { flex: 1.6; border-radius: 8px; background: #eef; }
+.side-list { flex: 1; overflow-y: auto; max-width: 380px; }
+.row { padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 6px; cursor: pointer; }
+.row:hover { background: #fafafa; }
+.badge-new { background: #ff5a5a; color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 10px; }
+.down { color: #1a9e5c; font-weight: 700; }
+.up { color: #c0392b; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; padding: 16px; }
+.card { border: 1px solid #eee; border-radius: 10px; padding: 12px; }
+.kpis { display: flex; gap: 10px; padding: 16px; }
+.kpi { flex: 1; background: #f7f7f7; border-radius: 10px; padding: 14px; text-align: center; }
+.kpi b { font-size: 22px; display: block; }
+.feed { padding: 0 16px 24px; }
