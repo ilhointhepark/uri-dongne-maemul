@@ -8,8 +8,18 @@ async function boot() {
   document.getElementById("updated").textContent = data.updated ? `갱신 ${data.updated}` : "";
   setupTabs();
   setupFilters();
+  buildGuFilter();
   initMap();
   render();
+}
+
+function buildGuFilter() {
+  const gus = [...new Set(LISTINGS.map(l => l.dong).filter(Boolean))].sort();
+  const box = document.getElementById("f-gu");
+  box.innerHTML = gus.map(g =>
+    `<label class="gu-chip"><input type="checkbox" value="${g}" checked>${g.replace(/^서울\s*/, "")}</label>`
+  ).join("");
+  box.querySelectorAll("input").forEach(cb => cb.addEventListener("change", render));
 }
 
 function initMap() {
@@ -53,11 +63,13 @@ function setupFilters() {
 
 function currentRows() {
   const max = parseInt(document.getElementById("f-max").value, 10);
-  const dong = document.getElementById("f-dong").value.trim();
+  const q = document.getElementById("f-dong").value.trim();
   const sort = document.getElementById("f-sort").value;
+  const gus = [...document.querySelectorAll("#f-gu input:checked")].map(c => c.value);
   let rows = LISTINGS.slice();
+  if (gus.length) rows = rows.filter(r => gus.includes(r.dong));
   if (!isNaN(max)) rows = rows.filter(r => r.price <= max);
-  if (dong) rows = rows.filter(r => (r.dong || "").includes(dong));
+  if (q) rows = rows.filter(r => (r.complex || "").includes(q) || (r.dong || "").includes(q));
   rows.sort((a, b) => {
     if (sort === "discount") return (b.discount_pct ?? -1e9) - (a.discount_pct ?? -1e9);
     if (sort === "price") return a.price - b.price;
