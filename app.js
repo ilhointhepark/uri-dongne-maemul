@@ -18,7 +18,9 @@ function initMap() {
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19, attribution: "© OpenStreetMap"
   }).addTo(MAP);
-  setTimeout(() => MAP.invalidateSize(), 200);  // flex 컨테이너 크기 반영
+  // flex 컨테이너 크기가 늦게 잡히는 경우 대비해 여러 시점에 재계산
+  [100, 400, 900].forEach(ms => setTimeout(() => MAP.invalidateSize(), ms));
+  window.addEventListener("resize", () => MAP.invalidateSize());
 }
 
 function drawMarkers(rows) {
