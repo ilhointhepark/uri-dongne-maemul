@@ -1,43 +1,33 @@
-// 대시보드 클라이언트: listings.json 로드 → 3탭 렌더 + 카카오맵 핀
+// 대시보드 클라이언트: listings.json 로드 → 3탭 렌더 + Leaflet/OSM 핀(키 불필요)
 let LISTINGS = [];
 let MAP = null, MARKERS = [];
 
 async function boot() {
-  const cfg = await fetch("web_config.json").then(r => r.json()).catch(() => ({}));
-  loadKakaoSdk(cfg.kakao_js_key);
   const data = await fetch("data/listings.json").then(r => r.json()).catch(() => ({listings: []}));
   LISTINGS = (data.listings || []).filter(l => l.matched);
   document.getElementById("updated").textContent = data.updated ? `갱신 ${data.updated}` : "";
   setupTabs();
   setupFilters();
+  initMap();
   render();
 }
 
-function loadKakaoSdk(jsKey) {
-  const el = document.getElementById("kakao-sdk");
-  el.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${jsKey}&autoload=false`;
-  el.onload = () => kakao.maps.load(initMap);
-}
-
 function initMap() {
-  const center = LISTINGS.find(l => l.lat && l.lng) || {lat: 37.5665, lng: 126.978};
-  MAP = new kakao.maps.Map(document.getElementById("map"), {
-    center: new kakao.maps.LatLng(center.lat, center.lng), level: 5,
-  });
-  drawMarkers(currentRows());
+  const center = LISTINGS.find(l => l.lat && l.lng) || {lat: 37.5172, lng: 127.0473};
+  MAP = L.map("map").setView([center.lat, center.lng], 12);
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "© OpenStreetMap"
+  }).addTo(MAP);
+  setTimeout(() => MAP.invalidateSize(), 200);  // flex 컨테이너 크기 반영
 }
 
 function drawMarkers(rows) {
   if (!MAP) return;
-  MARKERS.forEach(m => m.setMap(null)); MARKERS = [];
+  MARKERS.forEach(m => m.remove()); MARKERS = [];
   rows.filter(r => r.lat && r.lng).forEach(r => {
-    const mk = new kakao.maps.Marker({
-      position: new kakao.maps.LatLng(r.lat, r.lng), map: MAP,
-    });
-    const iw = new kakao.maps.InfoWindow({
-      content: `<div style="padding:6px;font-size:12px">${r.complex} ${fmtPrice(r.price)}</div>`,
-    });
-    kakao.maps.event.addListener(mk, "click", () => iw.open(MAP, mk));
+    const mk = L.marker([r.lat, r.lng]).addTo(MAP).bindPopup(
+      `<b>${r.complex}</b><br>${fmtPrice(r.price)} · ${r.area_py}평 ${r.floor}`
+      + `<br><a href="${r.url}" target="_blank">매물 보기</a>`);
     MARKERS.push(mk);
   });
 }
@@ -49,7 +39,7 @@ function setupTabs() {
       document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
       btn.classList.add("active");
       document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
-      if (btn.dataset.tab === "map" && MAP) setTimeout(() => MAP.relayout(), 0);
+      if (btn.dataset.tab === "map" && MAP) setTimeout(() => MAP.invalidateSize(), 0);
     };
   });
 }
